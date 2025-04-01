@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Expose MongoDB on localhost:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root # Set the root username
+      MONGO_INITDB_ROOT_PASSWORD: example # Set the root password
+    volumes:
+      - mongodb_data:/data/db # Persist MongoDB data
+
+volumes:
+  mongodb_data:
