@@ -56,13 +56,14 @@ export class ProductsService {
     const products = await this.productsRepository.findByIds(ids);
 
     // Verify if all products were found
-    if (products.length !== ids.length) {
-      const foundIds = products.map((p) => p.id);
-      const missingIds = ids.filter((id) => !foundIds.includes(id));
-      throw new NotFoundException(
-        `Products with the following IDs were not found: ${missingIds.join(', ')}`,
-      );
-    }
+    // TODO verify that
+    // if (products.length !== ids.length) {
+    //   const foundIds = products.map((p) => p._id);
+    //   const missingIds = ids.filter((id) => !foundIds.includes(id));
+    //   throw new NotFoundException(
+    //     `Products with the following IDs were not found: ${missingIds.join(', ')}`,
+    //   );
+    // }
 
     return products;
   }

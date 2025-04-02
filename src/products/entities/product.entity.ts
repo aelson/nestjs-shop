@@ -15,9 +15,6 @@ export type ProductDocument = Product & Document;
   },
 })
 export class Product {
-  @Prop({ required: true })
-  id: string;
-
   @Prop({ required: true, trim: true })
   name: string;
 
