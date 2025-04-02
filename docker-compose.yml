@@ -12,5 +12,22 @@ services:
     volumes:
       - mongodb_data:/data/db # Persist MongoDB data
 
+  app:
+    container_name: shop-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/shop?authSource=admin
+    depends_on:
+      - mongodb
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    restart: unless-stopped
+
 volumes:
   mongodb_data:
