@@ -36,6 +36,7 @@ export class CartsRepository {
     cartId: string,
     createCartItemDto: CreateCartItemDto,
     price: number,
+    productName: string,
   ): Promise<Cart | null> {
     return await this.cartModel
       .findByIdAndUpdate(
@@ -46,6 +47,7 @@ export class CartsRepository {
               productId: createCartItemDto.productId,
               quantity: 1,
               price: price,
+              productName: productName,
             },
           },
           $inc: { totalPrice: price },

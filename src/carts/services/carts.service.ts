@@ -7,13 +7,19 @@ import { UpdateItemQuantityDto } from '../dtos/update-item-quantity.dto';
 import { HttpService } from '@nestjs/axios';
 import { ProductDocument } from 'src/products/schemas/product.schema';
 import { firstValueFrom } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CartsService {
+  private apiBaseUrl: string;
+
   constructor(
     private readonly cartsRepository: CartsRepository,
     private readonly httpService: HttpService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.apiBaseUrl = this.configService.get<string>('API_BASE_URL', 'http://localhost:3000/api');
+  }
 
   async create(createCartDto: CreateCartDto): Promise<Cart> {
     return await this.cartsRepository.create(createCartDto);
@@ -31,7 +37,7 @@ export class CartsService {
 
   async getProductById(productId: string): Promise<ProductDocument> {
     const productResponse = await firstValueFrom(
-      this.httpService.get(`http://localhost:3000/api/products/${productId}`),
+      this.httpService.get(`${this.apiBaseUrl}/products/${productId}`),
     );
 
     if (!productResponse || !productResponse.data) {
@@ -53,7 +59,7 @@ export class CartsService {
 
   async updateProductStock(productId: string, quantity: number): Promise<void> {
     const productResponse = await firstValueFrom(
-      this.httpService.patch(`http://localhost:3000/api/products/${productId}`, {
+      this.httpService.patch(`${this.apiBaseUrl}/products/${productId}`, {
         stock: quantity,
       }),
     );
@@ -85,6 +91,7 @@ export class CartsService {
       cartId,
       createCartItemDto,
       product.price,
+      product.name,
     );
     if (!updatedCart) {
       throw new NotFoundException(`Cart with ID ${cartId} not found`);
