@@ -8,8 +8,7 @@ export function MaxBase64Size(maxSizeInMB: number, validationOptions?: Validatio
       propertyName: propertyName,
       options: validationOptions,
       validator: {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        validate(value: any, args: ValidationArguments) {
+        validate(value: any) {
           if (typeof value !== 'string' || !value.startsWith('data:')) {
             return false;
           }

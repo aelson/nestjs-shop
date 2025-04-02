@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Product, ProductDocument } from '../entities/product.entity';
+import { Product, ProductDocument } from '../schemas/product.schema';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { ProductQueryDto, SortOrder } from '../dtos/product-query.dto';
@@ -19,8 +19,7 @@ export class ProductsRepository {
   }
 
   async findAll(queryDto: ProductQueryDto): Promise<PaginatedResult<Product>> {
-    const { search, category, minPrice, maxPrice, active, sortBy, sortOrder, page, limit } =
-      queryDto;
+    const { search, minPrice, maxPrice, sortBy, sortOrder, page, limit } = queryDto;
 
     // Build query
     const query: any = {};
@@ -28,10 +27,6 @@ export class ProductsRepository {
     // Apply filters
     if (search) {
       query.name = { $regex: search, $options: 'i' };
-    }
-
-    if (category) {
-      query.categories = { $in: [category] };
     }
 
     // Price range filter
@@ -43,11 +38,6 @@ export class ProductsRepository {
       if (maxPrice !== undefined) {
         query.price.$lte = maxPrice;
       }
-    }
-
-    // Active filter
-    if (active !== undefined) {
-      query.isActive = active;
     }
 
     // Calculate pagination values
@@ -77,13 +67,10 @@ export class ProductsRepository {
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product | null> {
     const updatedProduct = await this.productModel
       .findByIdAndUpdate(id, updateProductDto, { new: true })
       .exec();
-    if (!updatedProduct) {
-      throw new Error(`Product with id ${id} not found`);
-    }
     return updatedProduct;
   }
 
@@ -93,10 +80,6 @@ export class ProductsRepository {
       throw new Error(`Product with id ${id} not found`);
     }
     return deletedProduct;
-  }
-
-  async findByIds(ids: string[]): Promise<Product[]> {
-    return await this.productModel.find({ _id: { $in: ids } }).exec();
   }
 
   async decreaseQuantity(id: string, quantity: number): Promise<Product> {

@@ -15,7 +15,7 @@ import { ProductsService } from '../services/products.service';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { ProductQueryDto } from '../dtos/product-query.dto';
-import { Product } from '../entities/product.entity';
+import { Product } from '../schemas/product.schema';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 
 @ApiTags('products')
@@ -51,7 +51,7 @@ export class ProductsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Product found', type: Product })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Product not found' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid ID format' })
-  async findOne(@Param('id') id: string): Promise<Product> {
+  async findOne(@Param('id') id: string): Promise<Product | null> {
     return await this.productsService.findOne(id);
   }
 
@@ -64,7 +64,7 @@ export class ProductsController {
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
-  ): Promise<Product> {
+  ): Promise<Product | null> {
     return await this.productsService.update(id, updateProductDto);
   }
 

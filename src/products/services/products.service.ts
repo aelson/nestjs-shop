@@ -3,7 +3,7 @@ import { ProductsRepository } from '../repositories/products.repository';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { ProductQueryDto } from '../dtos/product-query.dto';
-import { Product } from '../entities/product.entity';
+import { Product } from '../schemas/product.schema';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { MongoHelper } from '../../common/utils/mongo.helper';
 
@@ -19,53 +19,24 @@ export class ProductsService {
     return await this.productsRepository.findAll(queryDto);
   }
 
-  async findOne(id: string): Promise<Product> {
+  async findOne(id: string): Promise<Product | null> {
     this.validateObjectId(id);
 
     const product = await this.productsRepository.findOne(id);
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product | null> {
     this.validateObjectId(id);
 
     const product = await this.productsRepository.update(id, updateProductDto);
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
     return product;
   }
 
-  async remove(id: string): Promise<Product> {
+  async remove(id: string): Promise<void> {
     this.validateObjectId(id);
 
-    const product = await this.productsRepository.remove(id);
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-    return product;
-  }
-
-  async findByIds(ids: string[]): Promise<Product[]> {
-    // Validate all IDs first
-    ids.forEach((id) => this.validateObjectId(id));
-
-    const products = await this.productsRepository.findByIds(ids);
-
-    // Verify if all products were found
-    // TODO verify that
-    // if (products.length !== ids.length) {
-    //   const foundIds = products.map((p) => p._id);
-    //   const missingIds = ids.filter((id) => !foundIds.includes(id));
-    //   throw new NotFoundException(
-    //     `Products with the following IDs were not found: ${missingIds.join(', ')}`,
-    //   );
-    // }
-
-    return products;
+    await this.productsRepository.remove(id);
   }
 
   async checkProductAvailability(id: string, quantity: number): Promise<boolean> {
@@ -76,13 +47,9 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    if (!product.isActive) {
-      throw new BadRequestException(`Product ${product.name} is not available for purchase`);
-    }
-
-    if (product.quantity < quantity) {
+    if (product.stock < quantity) {
       throw new BadRequestException(
-        `Insufficient stock for product ${product.name}. Available: ${product.quantity}`,
+        `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
       );
     }
 
