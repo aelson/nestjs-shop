@@ -21,18 +21,14 @@ export class CartsRepository {
   async findCartItemById(cartId: string, itemId: string): Promise<CartItemDocument | null> {
     const result = await this.cartModel
       .aggregate([
-        // First match the cart by ID
         { $match: { _id: new mongoose.Types.ObjectId(cartId) } },
-        // Unwind the items array so each item becomes a separate document
         { $unwind: '$items' },
-        // Match the specific item by ID
         { $match: { 'items._id': new mongoose.Types.ObjectId(itemId) } },
-        // Project just the item
         { $project: { item: '$items', _id: 0 } },
       ])
       .exec();
 
-    // Return the item if found, otherwise null
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
     return result.length > 0 ? result[0].item : null;
   }
 
@@ -52,6 +48,7 @@ export class CartsRepository {
               price: price,
             },
           },
+          $inc: { totalPrice: price },
         },
         { new: true },
       )
@@ -59,36 +56,45 @@ export class CartsRepository {
   }
 
   async updateItemQuantity(cartId: string, itemId: string, quantity: number): Promise<Cart | null> {
-    return await this.cartModel
+    const updatedCart = await this.cartModel
       .findOneAndUpdate(
         { _id: cartId, 'items._id': itemId },
         { $set: { 'items.$.quantity': quantity } },
         { new: true },
       )
       .exec();
+
+    if (!updatedCart) return null;
+
+    await this.recalculateCartTotal(cartId);
+
+    return updatedCart;
   }
 
   async removeItem(cartId: string, itemId: string): Promise<Cart | null> {
-    return await this.cartModel
+    const updatedCart = await this.cartModel
       .findByIdAndUpdate(cartId, { $pull: { items: { _id: itemId } } }, { new: true })
       .exec();
+
+    if (!updatedCart) return null;
+
+    await this.recalculateCartTotal(cartId);
+
+    return updatedCart;
   }
 
   async remove(id: string): Promise<Cart | null> {
     return await this.cartModel.findByIdAndDelete(id).exec();
   }
 
-  async findByUser(userId: string): Promise<Cart[]> {
-    return await this.cartModel.find({ userId }).exec();
-  }
+  async recalculateCartTotal(cartId: string): Promise<Cart | null> {
+    const cart = await this.cartModel.findById(cartId).exec();
+    if (!cart) return null;
 
-  async updateCart(id: string, updateData: Partial<Cart>): Promise<Cart | null> {
-    return await this.cartModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
-  }
+    const totalPrice = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  async clearCart(id: string): Promise<Cart | null> {
     return await this.cartModel
-      .findByIdAndUpdate(id, { $set: { items: [] } }, { new: true })
+      .findByIdAndUpdate(cartId, { $set: { totalPrice: totalPrice } }, { new: true })
       .exec();
   }
 }
