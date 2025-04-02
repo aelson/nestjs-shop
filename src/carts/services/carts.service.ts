@@ -4,11 +4,16 @@ import { CreateCartDto, CreateCartItemDto } from '../dtos/create-cart.dto';
 import { Cart } from '../schemas/cart.schema';
 import { MongoHelper } from '../../common/utils/mongo.helper';
 import { UpdateItemQuantityDto } from '../dtos/update-item-quantity.dto';
-//import { CartItem } from '../schemas/cart-item.schema';
+import { HttpService } from '@nestjs/axios';
+import { ProductDocument } from 'src/products/schemas/product.schema';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class CartsService {
-  constructor(private readonly cartsRepository: CartsRepository) {}
+  constructor(
+    private readonly cartsRepository: CartsRepository,
+    private readonly httpService: HttpService,
+  ) {}
 
   async create(createCartDto: CreateCartDto): Promise<Cart> {
     return await this.cartsRepository.create(createCartDto);
@@ -24,20 +29,70 @@ export class CartsService {
     return cart;
   }
 
+  async getProductById(productId: string): Promise<ProductDocument> {
+    const productResponse = await firstValueFrom(
+      this.httpService.get(`http://localhost:3000/api/products/${productId}`),
+    );
+
+    if (!productResponse || !productResponse.data) {
+      throw new NotFoundException(`Failed to fetch product details for ID ${productId}`);
+    }
+
+    const product: ProductDocument = productResponse.data as ProductDocument;
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    if (product.stock < 1) {
+      throw new BadRequestException(`Insufficient stock for product ${product.name}.`);
+    }
+
+    return product;
+  }
+
+  async updateProductStock(productId: string, quantity: number): Promise<void> {
+    const productResponse = await firstValueFrom(
+      this.httpService.patch(`http://localhost:3000/api/products/${productId}`, {
+        stock: quantity,
+      }),
+    );
+
+    if (!productResponse || !productResponse.data) {
+      throw new NotFoundException(`Failed to update product stock for ID ${productId}`);
+    }
+  }
+
   async addItem(cartId: string, createCartItemDto: CreateCartItemDto): Promise<Cart> {
     this.validateObjectId(cartId);
+    this.validateObjectId(createCartItemDto.productId);
 
-    // TODO Validate product exists and has sufficient quantity
-    //await this.productsService.checkProductAvailability(itemDto.productId, itemDto.quantity);
+    const product = await this.getProductById(createCartItemDto.productId);
 
-    // TODO Get product price from product API
-    const price = 123;
-
-    const cart = await this.cartsRepository.addItem(cartId, createCartItemDto, price);
+    const cart = await this.cartsRepository.findOne(cartId);
     if (!cart) {
       throw new NotFoundException(`Cart with ID ${cartId} not found`);
     }
-    return cart;
+
+    const existingItem = cart.items.find(
+      (item) => item.productId.toString() === createCartItemDto.productId,
+    );
+    if (existingItem) {
+      throw new BadRequestException(`Product ${product.name} is already in the cart.`);
+    }
+
+    const updatedCart = await this.cartsRepository.addItem(
+      cartId,
+      createCartItemDto,
+      product.price,
+    );
+    if (!updatedCart) {
+      throw new NotFoundException(`Cart with ID ${cartId} not found`);
+    }
+
+    await this.updateProductStock(createCartItemDto.productId, product.stock - 1);
+
+    return updatedCart;
   }
 
   async removeItem(cartId: string, itemId: string): Promise<void> {
@@ -50,7 +105,6 @@ export class CartsService {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
   async updateItemQuantity(
     cartId: string,
     itemId: string,
@@ -59,23 +113,34 @@ export class CartsService {
     this.validateObjectId(cartId);
     this.validateObjectId(itemId);
 
-    // const cart = await this.getCart(cartId);
-    // TODO find the item by cartId and itemId
-    // const cartItem = cart.items.find((item: CartItem) => item._id === itemId);
+    const item = await this.cartsRepository.findCartItemById(cartId, itemId);
+    if (!item) {
+      throw new NotFoundException(`Item with ID ${itemId} not found`);
+    }
 
-    // if (!cartItem) {
-    //   throw new NotFoundException(`Item with ID ${itemId} not found in cart`);
-    // }
+    const product = await this.getProductById(item.productId);
+
+    const quantityDifference = updateCartItemDto.quantity - item.quantity;
+
+    if (quantityDifference > product.stock) {
+      throw new BadRequestException(`Insufficient stock for product ${product.name}.`);
+    }
+
+    const newStockQuantity = product.stock - quantityDifference;
 
     const updatedCart = await this.cartsRepository.updateItemQuantity(
       cartId,
       itemId,
       updateCartItemDto.quantity,
     );
+
     if (!updatedCart) {
       throw new NotFoundException(`Cart with ID ${cartId} not found`);
     }
-    return new Cart(); //updatedCart;
+
+    await this.updateProductStock(product._id as string, newStockQuantity);
+
+    return updatedCart;
   }
 
   async deleteCart(id: string): Promise<void> {

@@ -22,6 +22,7 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Product image (base64 data URL)',
+    example: 'data:image/jpeg;base64,<base64 here>',
   })
   @IsString()
   @MaxBase64Size(1)

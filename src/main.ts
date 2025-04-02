@@ -5,8 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -37,9 +35,8 @@ async function bootstrap() {
     }),
   );
 
-  // Apply global filters and interceptors
+  // Apply global filter
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new TransformInterceptor(), new LoggingInterceptor());
 
   // Setup Swagger documentation
   const config = new DocumentBuilder()

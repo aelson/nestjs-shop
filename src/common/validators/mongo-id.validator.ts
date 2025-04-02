@@ -9,7 +9,6 @@ export function IsMongoId(validationOptions?: ValidationOptions) {
       propertyName: propertyName,
       options: validationOptions,
       validator: {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         validate(value: any, args: ValidationArguments) {
           return Types.ObjectId.isValid(value);
         },
