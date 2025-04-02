@@ -1,33 +1,52 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3000);
 
-  // Set up global validation pipe
+  // Enable CORS
+  app.enableCors();
+
+  // Set global prefix
+  app.setGlobalPrefix('api');
+
+  // Apply global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
       transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  // Set up Swagger documentation
+  // Apply global filters and interceptors
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor(), new LoggingInterceptor());
+
+  // Setup Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('Shop API')
-    .setDescription('API for shop and shopping cart')
+    .setTitle('Shopping Cart API')
+    .setDescription('The Shopping Cart API documentation')
     .setVersion('1.0')
+    .addTag('products')
+    .addTag('carts')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
+  // Start the server
+  const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Application running on port ${port}`);
 }
 bootstrap();
