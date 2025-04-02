@@ -7,7 +7,7 @@ export type ProductDocument = Product & Document;
   timestamps: true,
   toJSON: {
     transform: (doc, ret) => {
-      ret.id = ret._id;
+      ret.id = (ret._id as string).toString();
       delete ret._id;
       delete ret.__v;
       return ret;
@@ -15,6 +15,9 @@ export type ProductDocument = Product & Document;
   },
 })
 export class Product {
+  @Prop({ required: true })
+  id: string;
+
   @Prop({ required: true, trim: true })
   name: string;
 
