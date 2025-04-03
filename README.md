@@ -66,11 +66,6 @@ http://localhost:3000/api/docs
 
 ## Testing
 
-Run unit tests:
-```
-npm run test
-```
-
 Run e2e tests:
 ```
 npm run test:e2e

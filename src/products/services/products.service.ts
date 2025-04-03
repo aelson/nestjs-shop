@@ -23,6 +23,9 @@ export class ProductsService {
     this.validateObjectId(id);
 
     const product = await this.productsRepository.findOne(id);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
     return product;
   }
 
