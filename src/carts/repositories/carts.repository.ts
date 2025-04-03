@@ -68,9 +68,9 @@ export class CartsRepository {
 
     if (!updatedCart) return null;
 
-    await this.recalculateCartTotal(cartId);
+    const cart = await this.recalculateCartTotal(cartId);
 
-    return updatedCart;
+    return cart;
   }
 
   async removeItem(cartId: string, itemId: string): Promise<Cart | null> {
@@ -80,9 +80,9 @@ export class CartsRepository {
 
     if (!updatedCart) return null;
 
-    await this.recalculateCartTotal(cartId);
+    const cart = await this.recalculateCartTotal(cartId);
 
-    return updatedCart;
+    return cart;
   }
 
   async remove(id: string): Promise<Cart | null> {
