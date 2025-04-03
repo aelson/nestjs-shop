@@ -85,4 +85,7 @@ src/
 ├── carts/        # Shopping cart module
 ├── app.module.ts # Main application module
 └── main.ts       # Application entry point
+test/
+├── carts.e2e-spec.ts    # e2e tests for Carts
+└── products.e2e-spec.ts # e2e tests for Products
 ```
