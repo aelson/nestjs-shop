@@ -40,11 +40,6 @@ Development mode:
 npm run start:dev
 ```
 
-Production mode:
-```
-npm run start:prod
-```
-
 ## API Documentation
 
 Once the application is running, you can access the Swagger API documentation at:
